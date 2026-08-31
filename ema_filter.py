@@ -41,6 +41,7 @@ ASSETS = {
 }
 
 CONFIGS = {
+    "15m": {"minutes": 15,  "sim_bars": 40_000, "real_days": 365,  "bpd": 96},
     "30m": {"minutes": 30,  "sim_bars": 30_000, "real_days": 500,  "bpd": 48},
     "1h":  {"minutes": 60,  "sim_bars": 30_000, "real_days": 730,  "bpd": 24},
 }
