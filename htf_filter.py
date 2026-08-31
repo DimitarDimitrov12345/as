@@ -2,11 +2,13 @@
 15m C1/C2/C3 pattern with 4h structure filter — BTC + ETH + SOL
 
 Filter rule:
-  BEARISH → take the short only if C2 high is ABOVE the previous 4h candle's high
-  BULLISH → take the long  only if C2 low  is BELOW the previous 4h candle's low
+  BEARISH → take the short only if C1 opens ABOVE the previous 4h candle's high
+            (pattern is trading in premium territory above the 4h level)
+  BULLISH → take the long  only if C1 opens BELOW the previous 4h candle's low
+            (pattern is trading in discount territory below the 4h level)
 
-Logic: the 15m C2 is sweeping a 4h key level and immediately reversing —
-that is the strongest possible trap setup.
+Logic: the C1/C2/C3 trap pattern must be unfolding above (bear) or below (bull)
+a key 4h structural level — not sweeping through it, but sitting above/below it.
 
 Entry = C3 15m open  (Polymarket 50c or exchange market)
 SL    = C2 high (bear) / C2 low (bull)
@@ -194,12 +196,12 @@ def build_records(bars_15m, bars_4h):
                 if not c1_red  or c2["low"]  > c1["low"]  or not c2_green: continue
 
             # ── HTF FILTER ────────────────────────────────────────────────────
-            # Bear: C2 must sweep ABOVE the previous 4h high
-            # Bull: C2 must sweep BELOW the previous 4h low
+            # Bear: C1 must OPEN above the previous 4h high (setup in premium)
+            # Bull: C1 must OPEN below the previous 4h low  (setup in discount)
             if bear:
-                htf_ok = c2["high"] > prev_4h["high"]
+                htf_ok = c1["open"] > prev_4h["high"]
             else:
-                htf_ok = c2["low"]  < prev_4h["low"]
+                htf_ok = c1["open"] < prev_4h["low"]
 
             r = sim_trade(c2, c3, direction)
             if r is None: continue
@@ -228,7 +230,7 @@ def build_records(bars_15m, bars_4h):
                 "extra":  extra,
                 "r":      r,
                 "direction": direction,
-                "c2_high": c2["high"], "c2_low": c2["low"],
+                "c1_open": c1["open"],
                 "prev_4h_high": prev_4h["high"], "prev_4h_low": prev_4h["low"],
             })
 
@@ -260,15 +262,15 @@ def analyse(records, calendar_days):
     no_htf = [r for r in records if not r["htf_ok"]]
 
     print(f"\n  ─── HTF FILTER COMPARISON ───────────────────────────────────────")
-    stats(htf,    "C2 sweeps 4h high/low  (HTF filter ON)", calendar_days)
-    stats(no_htf, "C2 does NOT sweep 4h  (HTF filter OFF)", calendar_days)
+    stats(htf,    "C1 opens beyond 4h level (HTF filter ON)", calendar_days)
+    stats(no_htf, "C1 inside 4h range      (HTF filter OFF)", calendar_days)
 
     # Direction breakdown
     htf_bear = [r for r in htf if r["direction"] == "bear"]
     htf_bull = [r for r in htf if r["direction"] == "bull"]
     print(f"\n  ─── HTF FILTER: DIRECTION BREAKDOWN ─────────────────────────────")
-    stats(htf_bear, "Bearish (C2 above 4h high → short)", calendar_days)
-    stats(htf_bull, "Bullish (C2 below 4h low  → long)", calendar_days)
+    stats(htf_bear, "Bearish (C1 above 4h high → short)", calendar_days)
+    stats(htf_bull, "Bullish (C1 below 4h low  → long)", calendar_days)
 
     # Extra signals stacked on HTF
     print(f"\n  ─── HTF + EXTRA SIGNAL COMBOS (sorted by EV) ───────────────────")
@@ -315,8 +317,8 @@ def analyse(records, calendar_days):
 def main():
     mode = "Real Binance" if USE_REAL else "Synthetic GBM"
     print(f"15m C1/C2/C3 + 4h Structure Filter  |  BTC + ETH + SOL  |  {mode}")
-    print(f"Bear: C2 sweeps above prev 4h high → short")
-    print(f"Bull: C2 sweeps below prev 4h low  → long")
+    print(f"Bear: C1 opens ABOVE prev 4h high (premium zone) → short")
+    print(f"Bull: C1 opens BELOW prev 4h low  (discount zone) → long")
     print(f"TP={R_MULT}R  SL=C2 extreme\n")
 
     sim_bars  = 40_000          # 15m bars
@@ -362,10 +364,10 @@ def main():
             d = ex["direction"].upper()
             outcome = "WIN ✓" if ex["r"] > 0 else "LOSS ✗"
             if d == "BEAR":
-                print(f"  {d}  C2 high={ex['c2_high']:,.2f} > 4h high={ex['prev_4h_high']:,.2f}  "
+                print(f"  {d}  C1 open={ex['c1_open']:,.2f} > 4h high={ex['prev_4h_high']:,.2f}  "
                       f"→ short  {outcome}  ({ex['r']:+.2f}R)")
             else:
-                print(f"  {d}  C2 low={ex['c2_low']:,.2f} < 4h low={ex['prev_4h_low']:,.2f}  "
+                print(f"  {d}  C1 open={ex['c1_open']:,.2f} < 4h low={ex['prev_4h_low']:,.2f}  "
                       f"→ long   {outcome}  ({ex['r']:+.2f}R)")
 
     print()
